@@ -92,3 +92,6 @@ for n in range(args.Order, args.Order + 1):
         sigErrVal = norms.errornorm(sigmaex, sigma)
         info = [polyDegree, dofs, errVal, sigErrVal, time]
         PETSc.Sys.Print(info)
+outfile = File("mixed_poisson_trapezoids_RTCE.pvd")
+outfile.write(u)
+
