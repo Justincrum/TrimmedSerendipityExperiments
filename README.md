@@ -1,0 +1,4 @@
+# TrimmedSerendipityExperiments
+
+Author:  Justin Crum
+
