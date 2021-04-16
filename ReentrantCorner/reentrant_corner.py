@@ -2,13 +2,19 @@
 #on reentrant corner mesh.
 
 from firedrake import *
-import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser(
+        description="Allows for input of order and mesh refinement.")
+parser.add_argument("-O", "--Order", 
+        type=int, help="Input the order of the polynomials.")
+args = parser.parse_args()
 
 mesh = Mesh('corner_mesh.msh')
 
 #mesh = UnitSquareMesh(8, 8, quadrilateral=True)
 
-V = FunctionSpace(mesh, "S", 2)
+V = FunctionSpace(mesh, "S", args.Order)
 
 u = TrialFunction(V)
 v = TestFunction(V)
@@ -23,13 +29,18 @@ L = inner(v,f)*dx
 x, y = SpatialCoordinate(mesh)
 r = (x**2 + y**2)**(0.5)
 alpha =  2/3
-theta = atan(y / x) + pi
+thetaPos = atan_2(y, x)
 
-wex = r**alpha * sin(alpha * theta)
+wPos = r**alpha * sin(alpha * thetaPos)
 
+thetaNeg = atan(y/x) + pi
+wNeg = r**alpha * sin(alpha * thetaNeg)
 
 BC0 = DirichletBC(V, 0.0, [8])
-BC1 = DirichletBC(V, wex, [9])
+BC1 = DirichletBC(V, wNeg, [9])
+BC2 = DirichletBC(V, wPos, [10])
+
+wex = wPos
 
 
 w = Function(V)
@@ -52,7 +63,7 @@ params = {"snes_type": "newtonls",
                   "mat_mumps_icntl_14": "1000"}
 
 
-solve(a == L, w, bcs=[BC0, BC1], solver_parameters=params)
+solve(a == L, w, bcs=[BC0, BC1, BC2], solver_parameters=params)
 
 err = norms.errornorm(wex, w)
 print(err)
