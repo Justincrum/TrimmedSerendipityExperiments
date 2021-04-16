@@ -7,6 +7,8 @@
 #2.  Implement the time stepping (currently left blank, see the Firedrake example Josh sent
 #    as well as the Niederer paper for proper time stepping values to use)
 #3.  Check that sigma is set up properly (currently using Vincent paper values)
+#4.  Once I set up time stepping, I'll also need to set up initial conditions
+#    including what the activiation in a corner will look like.
 
 from firedrake import *
 import argparse
