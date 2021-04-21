@@ -4,7 +4,6 @@
 
 #To do:
 #1.  Implement iIon as in Ten Tusscher
-#2.  Check that sigma is set up properly (currently using Vincent paper values)
 #3.  Need to set up initial conditions including what the activiation in
 #    a corner will look like.
 
@@ -29,6 +28,11 @@ uCurr = Function(h1Space, name="u")
 u = TrialFunction(h1Space)
 v = TestFunction(h1Space)
 
+uCurr.assign(-85.23)
+
+#Set the initial conditions.
+x, y, z = SpatialCoordinate(mesh)
+
 #Set up an output file.  I think I need to set up initial conditions before this
 #if I want to use to IC's other than 0.
 outfile = File("monodomain.pvd")
@@ -36,12 +40,12 @@ outfile.write(uCurr)
 
 #Model parameters, taken from the literature.
 chi = Constant(140)    
-iIon = Constant(1)   #This won't actually be a constant later.
+iIon = Constant(1e-12)   #This won't actually be a constant later.
 capacitance = Constant(0.01)
 sigma =  as_matrix([[0.133, 0.0, 0.0], [0.0, 0.0176, 0.0], [0.0, 0.0, 0.0176]])
 
 #Time step for dU/dT -> dUt
-tFinal = 23.0
+tFinal = 0.2
 dt = 0.05
 t = 0.0
 step = 0
@@ -81,7 +85,6 @@ while t <= tFinal:
         #t += dt
         #if step % 10 == 0:
         #        outfile.write(uCurr, time=t)
-
 
 
 
