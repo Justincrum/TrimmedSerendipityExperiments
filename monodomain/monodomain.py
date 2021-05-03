@@ -22,7 +22,7 @@ mesh = ExtrudedMesh(msh, layers=30, layer_height=0.1)
 polyOrder = args.Order
 
 #Set up the function space and test/trial functions.
-h1Space = FunctionSpace(mesh, "S", polyOrder)
+h1Space = FunctionSpace(mesh, "Q", polyOrder)
 uCurr = Function(h1Space, name="u")
 
 u = TrialFunction(h1Space)
@@ -39,13 +39,17 @@ outfile = File("monodomain.pvd")
 outfile.write(uCurr)
 
 #Model parameters, taken from the literature.
-chi = Constant(140)    
-iIon = Constant(1e-12)   #This won't actually be a constant later.
+A = Constant(0.04)
+vRest = Constant(-85.23)
+vPeak = Constant(40.)
+vTh = Constant(-65.)
+chi = Constant(140.)    
+iIon = A**2 * (uCurr - vRest) * (uCurr - vTh) * (uCurr - vPeak)
 capacitance = Constant(0.01)
 sigma =  as_matrix([[0.133, 0.0, 0.0], [0.0, 0.0176, 0.0], [0.0, 0.0, 0.0176]])
 
 #Time step for dU/dT -> dUt
-tFinal = 0.2
+tFinal = 2.0
 dt = 0.05
 t = 0.0
 step = 0
@@ -83,8 +87,8 @@ while t <= tFinal:
 
         solve(a == L, uCurr, solver_parameters=params)
         #t += dt
-        #if step % 10 == 0:
-        #        outfile.write(uCurr, time=t)
+        if step % 5 == 0:
+                outfile.write(uCurr, time=t)
 
 
 
