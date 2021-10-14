@@ -41,7 +41,24 @@ while curr_point < number_of_points:
 vtu_array = numpy_to_vtk(activation_time)
 
 
+## Code to write the array out on the mesh
 
+vtu_array.SetName("Activations")
+
+reader.SetFileName("FHN_results/FHN_2d_u_1.vtu")
+reader.Update()
+baseMesh = reader.GetOutput()
+
+
+outputMesh = vtk.vtkUnstructuredGrid()
+outputMesh.SetPoints(baseMesh.GetPoints())
+outputMesh.SetCells(vtk.VTK_QUAD, baseMesh.GetCells())
+outputMesh.GetPointData().AddArray(vtu_array)
+
+writer = vtk.vtkXMLUnstructuredGridWriter()
+writer.SetFileName("activations.vtu")
+writer.SetInputData(outputMesh)
+writer.Write()
 
 
 
