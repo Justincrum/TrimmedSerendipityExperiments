@@ -36,7 +36,6 @@ dt = Constant(0.1)
 t = Constant(0.0)
 
 InitialPotential = conditional(x < 3.5, Constant(2.0), Constant(-1.28791))
-#InitialCell = conditional(And(And(31 <= x, x < 39), And(0 <= y, y < 35)), Constant(2.0), Constant(-0.5758))
 InitialCell = conditional(And(And( 31<= x, x < 39), And(0 <= y, y < 35)), Constant(2.0), Constant(-0.5758))
 
 eps = Constant(0.1)
@@ -85,7 +84,7 @@ if RK == True:
     outfile2 = File("FHN_results/FHN_2d_c.pvd")
     outfile1.write(uFinal, time=0)
     outfile2.write(cFinal, time=0)
-    for j in range(50):
+    for j in range(301):
         stepper.advance()
         t.assign(float(t) + float(dt))
 

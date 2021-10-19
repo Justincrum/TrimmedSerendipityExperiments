@@ -39,7 +39,7 @@ while curr_point < number_of_points:
             curr_step = 0
 
 vtu_array = numpy_to_vtk(activation_time)
-
+#print(activation_time[507,])
 
 ## Code to write the array out on the mesh
 
