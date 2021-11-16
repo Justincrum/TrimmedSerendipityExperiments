@@ -44,7 +44,7 @@ sigma = as_matrix([[sigma1, 0.0], [0.0, sigma2]])
 
 
 # Set up Irksome to be used.
-butcher_tableau = RadauIIA(3)
+butcher_tableau = RadauIIA(2)
 ns = butcher_tableau.num_stages
 
 uu = Function(Z)
@@ -70,24 +70,42 @@ params = {"snes_atol": 1e-10,
           "pc_python_type": "irksome.RanaLD",
           "aux": {
               "pc_type": "fieldsplit",
-              "pc_fieldsplit_type": "multiplicative"}}
+              "pc_fieldsplit_type": "multiplicative",
+              "pc_fieldsplit_0_fields": "0,1",
+              "pc_fieldsplit_1_fields": "2,3",
+              "fieldsplit_0": {
+                  "ksp_type": "preonly",
+                  "pc_type": "fieldsplit",
+                  "pc_fieldsplit_type": "additive",
+                  "fieldsplit_0": {
+                      "ksp_type": "preonly",
+                      "pc_type": "gamg",
+                  },
+                  "fieldsplit_1": {
+                      "ksp_type": "preonly",
+                      "pc_type": "icc",
+                  }
+              },
+              "fieldsplit_1": {
+                  "ksp_type": "preonly",
+                  "pc_type": "fieldsplit",
+                  "pc_fieldsplit_type": "additive",
+                  "fieldsplit_0": {
+                      "ksp_type": "preonly",
+                      "pc_type": "gamg",
+                  },
+                  "fieldsplit_1": {
+                      "ksp_type": "preonly",
+                      "pc_type": "icc",
+                  }
+              }
+          }}
+# Rana PC
+# [[ M + dt a'_{11} K  0  ]]
+# [[ dt a'_{21} K      M + dt a'_{22} K ]]
+#
 
-per_stage = {
-    "ksp_type": "preonly",
-    "pc_type": "fieldsplit",
-    "pc_fieldsplit_type": "additive",
-    "fieldsplit_0": {
-        "ksp_type": "preonly",
-        "pc_type": "gamg",
-    },
-    "fieldsplit_1": {
-        "ksp_type": "preonly",
-        "pc_type": "icc",
-    }}
 
-for s in range(ns):
-    params["aux"][f"pc_fieldsplit_{s}_fields"] = f"{2*s},{2*s+1}"
-    params["aux"][f"fieldsplit_{s}"] = per_stage
 
 
 stepper = TimeStepper(F, butcher_tableau, t, dt, uu,
