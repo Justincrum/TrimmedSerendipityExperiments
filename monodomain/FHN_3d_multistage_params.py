@@ -27,7 +27,7 @@ mesh = ExtrudedMesh(msh, layers=100, layer_height=0.7)
 polyOrder = 1
 
 # Set up the function space and test/trial functions.
-V = FunctionSpace(mesh, "Lagrange", polyOrder)
+V = FunctionSpace(mesh, "Q", polyOrder)
 Z = V * V
 
 x, y, z = SpatialCoordinate(mesh)
