@@ -89,7 +89,7 @@ if RK:
     outfile2 = File("FHN_results/FHN_2d_c.pvd")
     outfile1.write(uFinal, time=0)
     outfile2.write(cFinal, time=0)
-    for j in range(6):
+    for j in range(41):
         stepper.advance()
         t.assign(float(t) + float(dt))
 

@@ -7,7 +7,6 @@
 #3.  Need to set up initial conditions including what the activiation in
 #    a corner will look like.
 
-from FHN_monodomain import Fc
 from firedrake import *
 import argparse
 import numpy as np
@@ -23,7 +22,7 @@ from irksome import GaussLegendre, Dt, TimeStepper, RadauIIA , LobattoIIIC
 mesh = RectangleMesh(100, 100, 70, 70, quadrilateral=True)
 #polyOrder = args.Order
 polyOrder = 1
-outfile = File("TT/monodomain2D.pvd")
+outfile = File("TTmonodomain2D.pvd")
 
 #Set up the function space and test/trial functions.
 V = FunctionSpace(mesh, "Q", polyOrder)
@@ -58,11 +57,11 @@ uu.sub(18).interpolate(Constant(2.42e-8)) #r
 
 (uCurr, NaIC, CaICT, KIC, CaSRT, CaSST, rBar, xR1, xR2, xS, m, h, j, d, f, f2, fCass, s, r) = split(uu)
 
-butcher_tableau = RadauIIA(1) #RadauIIA(1)  #LobattoIIIC(2)
+butcher_tableau = LobattoIIIC(2) #RadauIIA(2) #RadauIIA(1)  #LobattoIIIC(2)
 ns = butcher_tableau.num_stages
 
 x, y = SpatialCoordinate(mesh)
-dt = Constant(0.1)
+dt = Constant(0.01)
 t = Constant(0.0)
 
 #Model parameters, taken from the literature.
@@ -142,80 +141,80 @@ CaIC = CaICT- BUFC
 CaSS = CaSST - BUFSS
 CaSR = CaSRT - BUFSR
 
-eCa = R * T / (zCa * F) * np.log(CaO / CaIC)
-eNa = R * T / (zNa * F) * np.log(NaO/NaIC)
-eK = R * T / (zK * F) * np.log(kO/KIC)
-eKs = R * T / F * np.log((kO + pKNa * NaO) / (KIC + pKNa * NaIC))
+eCa = R * T / (zCa * F) * ln(CaO / CaIC)
+eNa = R * T / (zNa * F) * ln(NaO/NaIC)
+eK = R * T / (zK * F) * ln(kO/KIC)
+eKs = R * T / F * ln((kO + pKNa * NaO) / (KIC + pKNa * NaIC))
 
-mInf = 1 / (1 + np.exp((-56.86 - uCurr)/9.03))**2
-hInf = 1 / (1 + np.exp( (uCurr + 71.55)/7.43))**2
-jInf = 1 / (1 + np.exp( (uCurr + 71.55)/7.43))**2
+mInf = 1 / (1 + exp((-56.86 - uCurr)/9.03))**2
+hInf = 1 / (1 + exp( (uCurr + 71.55)/7.43))**2
+jInf = 1 / (1 + exp( (uCurr + 71.55)/7.43))**2
 
-alphaM = 1 / (1 + np.exp((-60-uCurr)/5))
-betaM = 0.1 / (1 + np.exp((uCurr+35)/5)) + 0.1 / (1 + np.exp((uCurr-50)/200))
+alphaM = 1 / (1 + exp((-60-uCurr)/5))
+betaM = 0.1 / (1 + exp((uCurr+35)/5)) + 0.1 / (1 + exp((uCurr-50)/200))
 tauM = alphaM * betaM
 
-alphaHLT =  0.057 * np.exp(-(uCurr + 80)/6.8)
+alphaHLT =  0.057 * exp(-(uCurr + 80)/6.8)
 alphaHGT = 0
-betaHGT =  0.77 / (0.13 * (1 + np.exp(-(uCurr + 10.66)/11.1)))
-betaHLT = 2.7 * exp(0.079 * uCurr) + 3.1e5 * np.exp(0.3485 * uCurr)
-alphaH = Function(h1Space).assign(conditional(uCurr >= -40, alphaHGT, alphaHLT))
-betaH = Function(h1Space).assign(conditional(uCurr >= -40, betaHGT, betaHLT))
+betaHGT =  0.77 / (0.13 * (1 + exp(-(uCurr + 10.66)/11.1)))
+betaHLT = 2.7 * exp(0.079 * uCurr) + 3.1e5 * exp(0.3485 * uCurr)
+alphaH = conditional(uCurr >= -40, alphaHGT, alphaHLT)
+betaH = conditional(uCurr >= -40, betaHGT, betaHLT)
 tauH = 1 / (alphaH + betaH)
 
 alphaJGT = 0
-alphaJLT = (uCurr + 37.78) * (-2.5428e4*np.exp(0.2444*uCurr) - 6.948e-6*np.exp(-0.04391*uCurr)) / (1 + np.exp(0.311 * (uCurr + 79.23)))
-betaJGT = (0.6 * np.exp(0.057 * uCurr)) / (1 + np.exp(-0.1*(uCurr+32)))
-betaJLT = (0.02424 * np.exp(-0.01052 * uCurr)) / (1 + np.exp(-0.1378 * (uCurr + 40.14)))
-alphaJ = Function(h1Space).assign(conditional(uCurr >= - 40, alphaJGT, alphaJLT))
-betaJ = Function(h1Space).assign(conditional(uCurr >= - 40, betaJGT, betaJLT))
+alphaJLT = (uCurr + 37.78) * (-2.5428e4*exp(0.2444*uCurr) - 6.948e-6*exp(-0.04391*uCurr)) / (1 + exp(0.311 * (uCurr + 79.23)))
+betaJGT = (0.6 * exp(0.057 * uCurr)) / (1 + exp(-0.1*(uCurr+32)))
+betaJLT = (0.02424 * exp(-0.01052 * uCurr)) / (1 + exp(-0.1378 * (uCurr + 40.14)))
+alphaJ = conditional(uCurr >= - 40, alphaJGT, alphaJLT)
+betaJ = conditional(uCurr >= - 40, betaJGT, betaJLT)
 tauJ = 1 / (alphaJ + betaJ)
 
 #iNa = gNa * mInf**3 * hInf * jInf * (uCurr - eNa)
 iNa = gNa * m**3 * h * j * (uCurr - eNa)
 
 #The transient outward current, iTo.
-rInf = 1 / (1 + np.exp((20 - uCurr)/6))
-sInf = 1 / (1 + np.exp((uCurr + 20)/5))
-tauR = 9.5 * np.exp(-(uCurr + 40)**2/1800) + 0.8
-tauS = 85 * np.exp(-(uCurr+45)**2 / 320) + 5 / (1 + np.exp((uCurr - 20) / 5)) + 3
+rInf = 1 / (1 + exp((20 - uCurr)/6))
+sInf = 1 / (1 + exp((uCurr + 20)/5))
+tauR = 9.5 * exp(-(uCurr + 40)**2/1800) + 0.8
+tauS = 85 * exp(-(uCurr+45)**2 / 320) + 5 / (1 + exp((uCurr - 20) / 5)) + 3
 
 iTo = gTo * rInf * sInf * (uCurr - eK)
 
 #Rapid delayed rectifier current
-xR1Inf = 1 / (1 + np.exp((-26-uCurr)/7))
-xR2Inf = 1 / (1 + np.exp((uCurr+88)/24))
+xR1Inf = 1 / (1 + exp((-26-uCurr)/7))
+xR2Inf = 1 / (1 + exp((uCurr+88)/24))
 
-alphaxR1 = 450 / (1 + np.exp((-45-uCurr)/10))
-betaxR1 = 6 / (1 + np.exp((uCurr+30)/11.5))
+alphaxR1 = 450 / (1 + exp((-45-uCurr)/10))
+betaxR1 = 6 / (1 + exp((uCurr+30)/11.5))
 tauxR1 = alphaxR1 * betaxR1
 
-alphaxR2 = 3 / (1 + np.exp((-60-uCurr)/20))
-betaxR2 = 1.12 / (1 + np.exp((uCurr - 60)/20))
+alphaxR2 = 3 / (1 + exp((-60-uCurr)/20))
+betaxR2 = 1.12 / (1 + exp((uCurr - 60)/20))
 tauxR2 = alphaxR2 * betaxR2
 
-iKr = gKr * np.sqrt(kO / 5.4) * xR1Inf * xR2Inf * (uCurr - eK)
+iKr = gKr * sqrt(kO / 5.4) * xR1Inf * xR2Inf * (uCurr - eK)
 
 #The inward rectifier current.
-alphaK1 = 0.1 / (1 + np.exp(0.06 * (uCurr - eK - 200)))
-betaK1 = (3 * np.exp(0.0002 * (uCurr - eK +100)) + np.exp(0.1 * (uCurr - eK -10))) / (1 + np.exp(-0.5 * (uCurr - eK)))
+alphaK1 = 0.1 / (1 + exp(0.06 * (uCurr - eK - 200)))
+betaK1 = (3 * exp(0.0002 * (uCurr - eK +100)) + exp(0.1 * (uCurr - eK -10))) / (1 + exp(-0.5 * (uCurr - eK)))
 xK1Inf = alphaK1 / (alphaK1 + betaK1)
 
-iK1 = gK1 * np.sqrt(kO / 5.4) * xK1Inf * (uCurr - eK)
+iK1 = gK1 * sqrt(kO / 5.4) * xK1Inf * (uCurr - eK)
 
 #The Na+/Ca2+ pump current.
-iNaK = pNaK * kO * NaIC / ((kO + kmK) * (NaIC + kmNa) * (1 + 0.1245 * np.exp(-0.1 * uCurr * F / (R * T)) + 0.0353 * np.exp(-uCurr * F /(R*T))))
+iNaK = pNaK * kO * NaIC / ((kO + kmK) * (NaIC + kmNa) * (1 + 0.1245 * exp(-0.1 * uCurr * F / (R * T)) + 0.0353 * exp(-uCurr * F /(R*T))))
 
 #The Na+/Ca2+ exchanger current.
-iNaCaTop = np.exp(gamma * uCurr * F / (R * T)) * NaIC**3 * CaO  - np.exp((gamma - 1) * uCurr * F /(R * T)) * NaO**3 * CaIC * alpha
-iNaCaBottom = (kmNai**3 + NaO**3) * (kmCa + CaO) * (1 + kSat * np.exp((gamma - 1) * uCurr * F / (R * T)))
+iNaCaTop = exp(gamma * uCurr * F / (R * T)) * NaIC**3 * CaO  - exp((gamma - 1) * uCurr * F /(R * T)) * NaO**3 * CaIC * alpha
+iNaCaBottom = (kmNai**3 + NaO**3) * (kmCa + CaO) * (1 + kSat * exp((gamma - 1) * uCurr * F / (R * T)))
 iNaCa = iNaCaTop / iNaCaBottom
 
 #The current IpCa.
 ipCa = gpCa * (CaIC / (kpCa + CaIC))
 
 #The current iPk.
-iPk = gpK * ((uCurr - eK) / (1 + np.exp((25-V)/5.98)))
+iPk = gpK * ((uCurr - eK) / (1 + exp((25-uCurr)/5.98)))
 
 #Background Currents.
 ibNa = gbNa * (uCurr - eNa)
@@ -223,33 +222,33 @@ ibCa = gbCa * (uCurr - eCa)
 
 #Now for the newer currents.
 #L-Type Ca2+ Current.
-dInf = 1 / (1 + np.exp((-8-uCurr)/7.5)) 
-alphaD = 1.4 / (1 + np.exp((-35 - uCurr)/13)) + 0.25
-betaD = 1.4 / (1 + np.exp((uCurr + 5)/5))
-gammaD = 1 / (1 + np.exp((50 - uCurr)/20))
+dInf = 1 / (1 + exp((-8-uCurr)/7.5)) 
+alphaD = 1.4 / (1 + exp((-35 - uCurr)/13)) + 0.25
+betaD = 1.4 / (1 + exp((uCurr + 5)/5))
+gammaD = 1 / (1 + exp((50 - uCurr)/20))
 tauD = alphaD * betaD + gammaD
 
-fInf = 1 / (1 + np.exp((uCurr + 20)/ 7))
-alphaF = 1102.5 * np.exp(-((uCurr+27)/15)**2)
-betaF = 200 / (1 + np.exp((13 - uCurr)/10))
-gammaF = 180 / (1 + np.exp((uCurr+30)/10)) + 20
+fInf = 1 / (1 + exp((uCurr + 20)/ 7))
+alphaF = 1102.5 * exp(-((uCurr+27)/15)**2)
+betaF = 200 / (1 + exp((13 - uCurr)/10))
+gammaF = 180 / (1 + exp((uCurr+30)/10)) + 20
 tauF = alphaF + betaF + gammaF
 
-f2Inf = 0.67 / (1 + np.exp((V + 35)/ 7)) + 0.33
-alphaF2 = 600 * np.exp(-(uCurr+25)**2/170)
-betaF2 = 31 / (1 + np.exp((25-uCurr)/10))
-gammaF2 = 16 / (1 + np.exp((uCurr+30)/10))
+f2Inf = 0.67 / (1 + exp((uCurr + 35)/ 7)) + 0.33
+alphaF2 = 600 * exp(-(uCurr+25)**2/170)
+betaF2 = 31 / (1 + exp((25-uCurr)/10))
+gammaF2 = 16 / (1 + exp((uCurr+30)/10))
 tauF2 = alphaF2 + betaF2 + gammaF2
 
 fCassInf = 0.6 / (1 + (CaSS/0.05)**2) + 0.4
 taufCass = 80 / (1 + (CaSS / 0.05)**2) + 2
 
-iCaL = 4 * gCaL * d * f * f2 * fCass * (V-15)*F**2/(R * T) * (0.25 * CaSS * np.exp(2 * (uCurr - 15) * F / (R * T)) - CaO) / (np.exp(2 * (uCurr - 15) * F / (R * T)) - 1)
+iCaL = 4 * gCaL * d * f * f2 * fCass * (uCurr-15)*F**2/(R * T) * (0.25 * CaSS * exp(2 * (uCurr - 15) * F / (R * T)) - CaO) / (exp(2 * (uCurr - 15) * F / (R * T)) - 1)
 
 #Slow delayed rectifier current.
-xSInf = 1 / (1 + np.exp((-5-uCurr)/14))
-alphaxS = 1400 / np.sqrt(1 + np.exp((5-uCurr)/6))
-betaxS = 1 / (1 + np.exp((uCurr - 35)/15))
+xSInf = 1 / (1 + exp((-5-uCurr)/14))
+alphaxS = 1400 / sqrt(1 + exp((5-uCurr)/6))
+betaxS = 1 / (1 + exp((uCurr - 35)/15))
 tauxS = alphaxS * betaxS + 80
 
 iKs = gKs * xSInf**2 * (uCurr - eKs)
@@ -276,17 +275,14 @@ O = (k1 * CaSS**2 * rBar) / (k3 + k1 * CaSS**2)
 ###These may need to change for benchmark testing.
 iStim = Constant(0.0)
 iAx = Constant(0.0)
+iIon = iNa + iK1 + iTo + iKr + iKs + iCaL + iNaCa + iNaK + ipCa + iPk + ibCa + ibNa
 
 Fu = inner(chi * capacitance * Dt(uCurr), vu)*dx + inner(grad(uCurr), sigma * grad(vu))*dx + inner(chi * iIon, vu)*dx
 FNaIC = inner(Dt(NaIC), vnaic)*dx - inner((NaIC + ibNa + 3 * iNaK + 3 * iNaCa) / (vC * F), vnaic)*dx
-
 FCaITotal = inner(Dt(CaICT), vcaic)*dx + inner((ibCa + ipCa - 2 * iNaCa) / (2 * vC * F), vcaic)*dx - inner(vSR / vC * (iLeak - iUp) + iXfer, vcaic)*dx
-
 FKIC = inner(Dt(KIC), vkic)*dx + inner((iK1 + iTo + iKr + iKs - 2 * iNaK + iPk + iStim - iAx) / (vC * F), vkic)*dx
-
 FCaSRT = inner(Dt(CaSRT), vcasr)*dx - inner(iUp - iLeak - iRel, vcasr)*dx
 FCaSST = inner(Dt(CaSST), vcass)*dx + inner((iCaL / (2 * vSS * F) + (vSR / vSS) * iRel - (vC / vSS) * iXfer), vcass)*dx
-
 FrBar = inner(Dt(rBar), vrbar)*dx - inner(-k2 * CaSS * rBar + k4 * (1 - rBar), vrbar)*dx
 FxR1 = inner(Dt(xR1), vxr1)*dx - inner(alphaxR1 * (1 - xR1) + betaxR1 * xR1, vxr1)*dx
 FxR2 = inner(Dt(xR2), vxr2)*dx - inner(alphaxR2 * (1 - xR2) + betaxR2 * xR2, vxr2)*dx
@@ -301,7 +297,7 @@ FfCass = inner(Dt(fCass), vfcass)*dx - inner((fCassInf - fCass) / taufCass, vfca
 Fr = inner(Dt(r), vr)*dx - inner((rInf - r) / tauR, vr)*dx
 Fs = inner(Dt(s), vs)*dx - inner((sInf - s) / tauS, vs)*dx
 
-F = Fu + FNaIC + FCaITotal + FKIC + FCaSR + FCaSS + FrBar + FxR1 + FxR2 + FxS + Fm + Fh + Fj + Fd + Ff + Ff2 + FfCass + Fr + Fs
+F = Fu + FNaIC + FCaITotal + FKIC + FCaSRT + FCaSST + FrBar + FxR1 + FxR2 + FxS + Fm + Fh + Fj + Fd + Ff + Ff2 + FfCass + Fr + Fs
 
 params = {"mat_type": "aij",
            "ksp_type": "cg", #gmres or cg preonly
@@ -318,12 +314,12 @@ stepper = TimeStepper(F, butcher_tableau, t, dt, uu,
 uFinal, NaICF, CaICF, KICF, CaSRF, CaSSF, rBarF, xR1F, xR2F, xSF, mF, hF, jF, dF, fF, f2F, fCassF, sF, rF = uu.split()
 outfile.write(uFinal, time=0)
 
-# for j in range(1):
-#     stepper.advance()
-#     t.assign(float(t) + float(dt))
-#     if (j % 5  == 0):
-#         print("Time step", j)
-#         outfile.write(uFinal, time=j * float(dt))
+for j in range(1):
+    stepper.advance()
+    t.assign(float(t) + float(dt))
+    if (j % 5  == 0):
+        print("Time step", j)
+        outfile.write(uFinal, time=j * float(dt))
 
 
 #     #Update parameter values for the cell model for the next iteration.
@@ -333,80 +329,80 @@ outfile.write(uFinal, time=0)
 
 
 #     #First create iNa.
-#     eCa = R * T / (zCa * F) * np.log(CaO / CaIC)
-#     eNa = R * T / (zNa * F) * np.log(NaO/NaIC)
-#     eK = R * T / (zK * F) * np.log(kO/KIC)
-#     eKs = R * T / F * np.log((kO + pKNa * NaO) / (KIC + pKNa * NaIC))
+#     eCa = R * T / (zCa * F) * log(CaO / CaIC)
+#     eNa = R * T / (zNa * F) * log(NaO/NaIC)
+#     eK = R * T / (zK * F) * log(kO/KIC)
+#     eKs = R * T / F * log((kO + pKNa * NaO) / (KIC + pKNa * NaIC))
 
-#     mInf = 1 / (1 + np.exp((-56.86 - uCurr)/9.03))**2
-#     hInf = 1 / (1 + np.exp( (uCurr + 71.55)/7.43))**2
-#     jInf = 1 / (1 + np.exp( (uCurr + 71.55)/7.43))**2
+#     mInf = 1 / (1 + exp((-56.86 - uCurr)/9.03))**2
+#     hInf = 1 / (1 + exp( (uCurr + 71.55)/7.43))**2
+#     jInf = 1 / (1 + exp( (uCurr + 71.55)/7.43))**2
 
-#     alphaM = 1 / (1 + np.exp((-60-V)/5))
-#     betaM = 0.1 / (1 + np.exp((V+35)/5)) + 0.1 / (1 + np.exp((V-50)/200))
+#     alphaM = 1 / (1 + exp((-60-V)/5))
+#     betaM = 0.1 / (1 + exp((V+35)/5)) + 0.1 / (1 + exp((V-50)/200))
 #     tauM = alphaM * betaM
 
-#     alphaHLT =  0.057 * np.exp(-(uCurr + 80)/6.8)
+#     alphaHLT =  0.057 * exp(-(uCurr + 80)/6.8)
 #     alphaHGT = 0
-#     betaHGT =  0.77 / (0.13 * (1 + np.exp(-(uCurr + 10.66)/11.1)))
-#     betaHLT = 2.7 *  exp(0.079 * uCurr) + 3.1e5 * np.exp(0.3485 * uCurr)
-#     alphaH = Function(h1Space).assign(conditional(uCurr >= -40, alphaHGT, alphaHLT))
-#     betaH = Function(h1Space).assign(conditional(uCurr >= -40, betaHGT, betaHLT))
+#     betaHGT =  0.77 / (0.13 * (1 + exp(-(uCurr + 10.66)/11.1)))
+#     betaHLT = 2.7 *  exp(0.079 * uCurr) + 3.1e5 * exp(0.3485 * uCurr)
+#     alphaH = Function(V).assign(conditional(uCurr >= -40, alphaHGT, alphaHLT))
+#     betaH = Function(V).assign(conditional(uCurr >= -40, betaHGT, betaHLT))
 #     tauH = 1 / (alphaH + betaH)
 
 #     alphaJGT = 0
-#     alphaJLT = (uCurr + 37.78) * (-2.5428e4*np.exp(0.2444*uCurr) - 6.948e-6*np.exp(-0.04391*uCurr)) / (1 + np.exp(0.311 * (uCurr + 79.23)))
-#     betaJGT = (0.6 * np.exp(0.057 * uCurr)) / (1 + np.exp(-0.1*(uCurr+32)))
-#     betaJLT = (0.02424 * np.exp(-0.01052 * uCurr)) / (1 + np.exp(-0.1378 * (uCurr + 40.14)))
-#     alphaJ = Function(h1Space).assign(conditional(uCurr >= - 40, alphaJGT, alphaJLT))
-#     betaJ = Function(h1Space).assign(conditional(uCurr >= - 40, betaJGT, betaJLT))
+#     alphaJLT = (uCurr + 37.78) * (-2.5428e4*exp(0.2444*uCurr) - 6.948e-6*exp(-0.04391*uCurr)) / (1 + exp(0.311 * (uCurr + 79.23)))
+#     betaJGT = (0.6 * exp(0.057 * uCurr)) / (1 + exp(-0.1*(uCurr+32)))
+#     betaJLT = (0.02424 * exp(-0.01052 * uCurr)) / (1 + exp(-0.1378 * (uCurr + 40.14)))
+#     alphaJ = Function(V).assign(conditional(uCurr >= - 40, alphaJGT, alphaJLT))
+#     betaJ = Function(V).assign(conditional(uCurr >= - 40, betaJGT, betaJLT))
 #     tauJ = 1 / (alphaJ + betaJ)
 
 #     iNa = gNa * mInf**3 * hInf * jInf * (uCurr - eNa)
 #     #iNa = gNa * m**3 * h * j * (uCurr - eNa)
 
 #     #The transient outward current, iTo.
-#     rInf = 1 / (1 + np.exp((20 - uCurr)/6))
-#     sInf = 1 / (1 + np.exp((uCurr + 20)/5))
-#     tauR = 9.5 * np.exp(-(uCurr + 40)**2/1800) + 0.8
-#     tauS = 85 * np.exp(-(uCurr+45)**2 / 320) + 5 / (1 + np.exp((uCurr - 20) / 5)) + 3
+#     rInf = 1 / (1 + exp((20 - uCurr)/6))
+#     sInf = 1 / (1 + exp((uCurr + 20)/5))
+#     tauR = 9.5 * exp(-(uCurr + 40)**2/1800) + 0.8
+#     tauS = 85 * exp(-(uCurr+45)**2 / 320) + 5 / (1 + exp((uCurr - 20) / 5)) + 3
 
 #     iTo = gTo * rInf * sInf * (uCurr - eK)
 
 #     #Rapid delayed rectifier current
-#     xR1Inf = 1 / (1 + np.exp((-26-uCurr)/7))
-#     xR2Inf = 1 / (1 + np.exp((uCurr+88)/24))
+#     xR1Inf = 1 / (1 + exp((-26-uCurr)/7))
+#     xR2Inf = 1 / (1 + exp((uCurr+88)/24))
 
-#     alphaxR1 = 450 / (1 + np.exp((-45-uCurr)/10))
-#     betaxR1 = 6 / (1 + np.exp((uCurr+30)/11.5))
+#     alphaxR1 = 450 / (1 + exp((-45-uCurr)/10))
+#     betaxR1 = 6 / (1 + exp((uCurr+30)/11.5))
 #     tauxR1 = alphaxR1 * betaxR1
 
-#     alphaxR2 = 3 / (1 + np.exp((-60-uCurr)/20))
-#     betaxR2 = 1.12 / (1 + np.exp((uCurr - 60)/20))
+#     alphaxR2 = 3 / (1 + exp((-60-uCurr)/20))
+#     betaxR2 = 1.12 / (1 + exp((uCurr - 60)/20))
 #     tauxR2 = alphaxR2 * betaxR2
 
-#     iKr = gKr * np.sqrt(kO / 5.4) * xR1Inf * xR2Inf * (uCurr - eK)
+#     iKr = gKr * sqrt(kO / 5.4) * xR1Inf * xR2Inf * (uCurr - eK)
 
 #     #The inward rectifier current.
-#     alphaK1 = 0.1 / (1 + np.exp(0.06 * (uCurr - eK - 200)))
-#     betaK1 = (3 * np.exp(0.0002 * (uCurr - eK +100)) + np.exp(0.1 * (uCurr - eK -10))) / (1 + np.exp(-0.5 * (uCurr - eK)))
+#     alphaK1 = 0.1 / (1 + exp(0.06 * (uCurr - eK - 200)))
+#     betaK1 = (3 * exp(0.0002 * (uCurr - eK +100)) + exp(0.1 * (uCurr - eK -10))) / (1 + exp(-0.5 * (uCurr - eK)))
 #     xK1Inf = alphaK1 / (alphaK1 + betaK1)
 
-#     iK1 = gK1 * np.sqrt(kO / 5.4) * xK1Inf * (uCurr - eK)
+#     iK1 = gK1 * sqrt(kO / 5.4) * xK1Inf * (uCurr - eK)
 
 #     #The Na+/Ca2+ pump current.
-#     iNaK = pNaK * kO * NaIC / ((kO + kmK) * (NaIC + kmNa) * (1 + 0.1245 * np.exp(-0.1 * uCurr * F / (R * T)) + 0.0353 * np.exp(-uCurr * F /(R*T))))
+#     iNaK = pNaK * kO * NaIC / ((kO + kmK) * (NaIC + kmNa) * (1 + 0.1245 * exp(-0.1 * uCurr * F / (R * T)) + 0.0353 * exp(-uCurr * F /(R*T))))
 
 #     #The Na+/Ca2+ exchanger current.
-#     iNaCaTop = np.exp(gamma * uCurr * F / (R * T)) * NaIC**3 * CaO  - np.exp((gamma - 1) * uCurr * F /(R * T)) * NaO**3 * CaIC * alpha
-#     iNaCaBottom = (kmNai**3 + NaO**3) * (kmCa + CaO) * (1 + kSat * np.exp((gamma - 1) * uCurr * F / (R * T)))
+#     iNaCaTop = exp(gamma * uCurr * F / (R * T)) * NaIC**3 * CaO  - exp((gamma - 1) * uCurr * F /(R * T)) * NaO**3 * CaIC * alpha
+#     iNaCaBottom = (kmNai**3 + NaO**3) * (kmCa + CaO) * (1 + kSat * exp((gamma - 1) * uCurr * F / (R * T)))
 #     iNaCa = iNaCaTop / iNaCaBottom
 
 #     #The current IpCa.
 #     ipCa = gpCa * (CaIC / (kpCa + CaIC))
 
 #     #The current iPk.
-#     iPk = gpK * ((uCurr - eK) / (1 + np.exp((25-V)/5.98)))
+#     iPk = gpK * ((uCurr - eK) / (1 + exp((25-V)/5.98)))
 
 #     #Background Currents.
 #     ibNa = gbNa * (uCurr - eNa)
@@ -414,34 +410,34 @@ outfile.write(uFinal, time=0)
 
 #     #Now for the newer currents.
 #     #L-Type Ca2+ Current.
-#     dInf = 1 / (1 + np.exp((-8-uCurr)/7.5)) 
-#     alphaD = 1.4 / (1 + np.exp((-35 - uCurr)/13)) + 0.25
-#     betaD = 1.4 / (1 + np.exp((uCurr + 5)/5))
-#     gammaD = 1 / (1 + np.exp((50 - uCurr)/20))
+#     dInf = 1 / (1 + exp((-8-uCurr)/7.5)) 
+#     alphaD = 1.4 / (1 + exp((-35 - uCurr)/13)) + 0.25
+#     betaD = 1.4 / (1 + exp((uCurr + 5)/5))
+#     gammaD = 1 / (1 + exp((50 - uCurr)/20))
 #     tauD = alphaD * betaD + gammaD
 
-#     fInf = 1 / (1 + np.exp((uCurr + 20)/ 7))
-#     alphaF = 1102.5 * np.exp(-((uCurr+27)/15)**2)
-#     betaF = 200 / (1 + np.exp((13 - uCurr)/10))
-#     gammaF = 180 / (1 + np.exp((uCurr+30)/10)) + 20
+#     fInf = 1 / (1 + exp((uCurr + 20)/ 7))
+#     alphaF = 1102.5 * exp(-((uCurr+27)/15)**2)
+#     betaF = 200 / (1 + exp((13 - uCurr)/10))
+#     gammaF = 180 / (1 + exp((uCurr+30)/10)) + 20
 #     tauF = alphaF + betaF + gammaF
 
-#     f2Inf = 0.67 / (1 + np.exp((V + 35)/ 7)) + 0.33
-#     alphaF2 = 600 * np.exp(-(uCurr+25)**2/170)
-#     betaF2 = 31 / (1 + np.exp((25-uCurr)/10))
-#     gammaF2 = 16 / (1 + np.exp((uCurr+30)/10))
+#     f2Inf = 0.67 / (1 + exp((V + 35)/ 7)) + 0.33
+#     alphaF2 = 600 * exp(-(uCurr+25)**2/170)
+#     betaF2 = 31 / (1 + exp((25-uCurr)/10))
+#     gammaF2 = 16 / (1 + exp((uCurr+30)/10))
 #     tauF2 = alphaF2 + betaF2 + gammaF2
 
 #     fCassInf = 0.6 / (1 + (CaSS/0.05)**2) + 0.4
 #     taufCass = 80 / (1 + (CaSS / 0.05)**2) + 2
 
-#     iCaL = 4 * gCaL * dInf * fInf * f2Inf * fCassInf * (V-15)*F**2/(R * T) * (0.25 * CaSS * np.exp(2 * (uCurr - 15) * F / (R * T)) - CaO) / (np.exp(2 * (uCurr - 15) * F / (R * T)) - 1)
-#     #iCaL = 4 * g * d * f * f2 * fCass * (V-15)*F**2/(R * T) * (0.25 * CaSS * np.exp(2 * (uCurr - 15) * F / (R * T)) - CaO) / (np.exp(2 * (uCurr - 15) * F / (R * T)) - 1)
+#     iCaL = 4 * gCaL * dInf * fInf * f2Inf * fCassInf * (V-15)*F**2/(R * T) * (0.25 * CaSS * exp(2 * (uCurr - 15) * F / (R * T)) - CaO) / (exp(2 * (uCurr - 15) * F / (R * T)) - 1)
+#     #iCaL = 4 * g * d * f * f2 * fCass * (V-15)*F**2/(R * T) * (0.25 * CaSS * exp(2 * (uCurr - 15) * F / (R * T)) - CaO) / (exp(2 * (uCurr - 15) * F / (R * T)) - 1)
 
 #     #Slow delayed rectifier current.
-#     xSInf = 1 / (1 + np.exp((-5-uCurr)/14))
-#     alphaxS = 1400 / np.sqrt(1 + np.exp((5-uCurr)/6))
-#     betaxS = 1 / (1 + np.exp((uCurr - 35)/15))
+#     xSInf = 1 / (1 + exp((-5-uCurr)/14))
+#     alphaxS = 1400 / sqrt(1 + exp((5-uCurr)/6))
+#     betaxS = 1 / (1 + exp((uCurr - 35)/15))
 #     tauxS = alphaxS * betaxS + 80
 
 #     iKs = gKs * xSInf**2 * (uCurr - eKs)
